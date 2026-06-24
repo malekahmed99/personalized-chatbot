@@ -14,7 +14,7 @@ export default function MessageInput({ disabled, onSend }) {
     <form className="message-input" onSubmit={handleSubmit}>
       <textarea
         rows={1}
-        placeholder="Message phi-4..."
+        placeholder="Message AI model..."
         value={text}
         onChange={(e) => setText(e.target.value)}
         onKeyDown={(e) => {

@@ -1,19 +1,4 @@
-// ---------------------------------------------------------------------------
-// This file is the ONLY place in the app that talks to the backend.
-// Every component calls these functions and never touches fetch() directly.
-//
-// Right now USE_MOCK is true, so these functions return fake data with a
-// small delay - that's enough to build and test the whole UI before your
-// teammate's FastAPI server even exists.
-//
-// When the real backend is ready:
-//   1. Set USE_MOCK = false below.
-//   2. Put the backend URL in a .env file as VITE_API_URL=http://...
-//   3. Nothing else changes - every component keeps working as-is, because
-//      they only depend on the function names below, not on how the data
-//      is actually fetched.
-//
-// This is the API contract to agree on with your FastAPI teammate:
+// This is the API contract to agree on:
 //   GET    /sessions                  -> [{ id, title, updated_at }]
 //   POST   /sessions                  -> { id, title, updated_at }
 //   GET    /sessions/{id}/messages    -> [{ role: "user"|"bot", text }]
@@ -83,7 +68,7 @@ export async function getMessages(sessionId) {
 export async function sendMessage(sessionId, text) {
   if (USE_MOCK) {
     await delay(700 + Math.random() * 600);
-    const reply = `(mock phi-4 reply) You said: "${text}". Once the real backend is connected, this will be an actual generated response.`;
+    const reply = `(mock AI model reply) You said: "${text}". Once the real backend is connected, this will be an actual generated response.`;
     mockMessages[sessionId] = [
       ...(mockMessages[sessionId] || []),
       { role: "user", text },

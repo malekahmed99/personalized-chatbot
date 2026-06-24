@@ -19,14 +19,14 @@ export default function ChatWindow({ sessionTitle, messages, isSending, onSend, 
         </button>
         <h2>{sessionTitle}</h2>
         <span className="status">
-          <span className="status-dot" /> phi-4-8b online
+          <span className="status-dot" /> AI model online
         </span>
       </header>
 
       <div className="message-list">
         {messages.length === 0 && (
           <div className="empty-state">
-            <p>Ask phi-4 anything to start the conversation.</p>
+            <p>Ask the AI model anything to start the conversation.</p>
           </div>
         )}
         {messages.map((msg, i) => (

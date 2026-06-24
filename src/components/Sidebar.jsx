@@ -31,7 +31,7 @@ export default function Sidebar({
       <div className="sidebar-header">
         <div className="logo">
           <span className="logo-mark">φ</span>
-          <span className="logo-text">Phi-4 Chat</span>
+          <span className="logo-text">AI Chat</span>
         </div>
         <button className="new-chat-btn" onClick={onNewChat}>
           + New chat
@@ -88,7 +88,7 @@ export default function Sidebar({
       </nav>
 
       <div className="sidebar-footer">
-        <span className="model-tag">phi-4 · 8b</span>
+        <span className="model-tag">AI model</span>
       </div>
     </aside>
   );
