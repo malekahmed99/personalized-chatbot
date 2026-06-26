@@ -3,6 +3,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 
 from .enums import RoleEnum
+from .feedback import FeedbackOut
 
 
 # ── Input Schemas (No ORM config) ───────────────────────────────────────────
@@ -29,3 +30,5 @@ class MessageOut(BaseModel):
     role: RoleEnum
     content: str
     created_at: datetime
+    # Populated only for assistant messages that have been rated. Null otherwise.
+    feedback: FeedbackOut | None = None

@@ -21,4 +21,43 @@ dist-ssr
 *.ntvs*
 *.njsproj
 *.sln
-*.sw?
+
+# ── Python ──────────────────────────────────────────────────────────────────
+.venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+.Python
+pip-log.txt
+pip-delete-this-directory.txt
+*.egg-info/
+dist/
+build/
+
+# ── Environment ─────────────────────────────────────────────────────────────
+.env
+!.env.example
+
+# ── Model artifacts — NEVER commit weights to git ───────────────────────────
+*.gguf
+*.safetensors
+*.bin
+*.pt
+*.pth
+tokenizer.json
+tokenizer_config.json
+special_tokens_map.json
+
+# ── Database ─────────────────────────────────────────────────────────────────
+*.db
+*.sqlite
+*.sqlite3
+
+# ── Alembic ──────────────────────────────────────────────────────────────────
+alembic/versions/*.pyc
+
+# ── Testing & coverage ───────────────────────────────────────────────────────
+.pytest_cache/
+.coverage
+htmlcov/

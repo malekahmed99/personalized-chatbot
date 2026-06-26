@@ -3,7 +3,7 @@ from sqlalchemy import Column, String, DateTime
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.sql import func
 from sqlalchemy.orm import relationship
-from database import Base
+from core.database import Base
 
 
 class User(Base):

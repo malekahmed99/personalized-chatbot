@@ -13,12 +13,11 @@ from alembic import context
 from dotenv import load_dotenv
 load_dotenv(Path(__file__).resolve().parents[1] / ".env")
 
-from config import get_settings
-settings = get_settings()
+from core.config import settings
 
 # ── Import all models so autogenerate can detect every table ─────────────────
 import models  # noqa: F401 — side-effect import registers ORM metadata
-from database import Base
+from core.database import Base
 
 # ── Alembic Config ────────────────────────────────────────────────────────────
 config = context.config

@@ -2,6 +2,8 @@ import uuid
 from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 
+from .message import MessageOut
+
 
 # ── Input Schemas (No ORM config) ───────────────────────────────────────────
 
@@ -29,10 +31,17 @@ class SessionListItem(BaseModel):
 
 
 class SessionOut(BaseModel):
-    """Full session response."""
+    """Full session response, including the ordered message history."""
     model_config = ConfigDict(from_attributes=True)
 
     id: uuid.UUID
     title: str | None
     created_at: datetime
     updated_at: datetime
+    messages: list[MessageOut] = []
+
+
+class SessionListOut(BaseModel):
+    """Paginated wrapper for GET /api/sessions."""
+    sessions: list[SessionListItem]
+    total: int
