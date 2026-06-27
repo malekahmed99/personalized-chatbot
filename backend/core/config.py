@@ -18,18 +18,34 @@ class Settings(BaseSettings):
     n_threads: int = 8          # CPU threads handed to llama.cpp
     n_gpu_layers: int = 0       # 0 = CPU-only; -1 = offload all layers to GPU
     max_new_tokens: int = 2048  # Hard cap on generated tokens per response
+    # LLM — stop tokens (comma-separated in .env, e.g. <|im_end|>,<|endoftext|>)
+    llm_stop_tokens: list[str] = ["<|im_end|>", "<|endoftext|>"]
+    # LLM — sampling parameters (Qwen3 community-established defaults)
+    llm_temperature: float = 0.7
+    llm_top_p: float = 0.9
+    llm_top_k: int = 40
+    llm_repeat_penalty: float = 1.1
+    llm_min_p: float = 0.05
     # LLM — system prompt (configurable without code changes)
-    llm_system_prompt: str = """
+    llm_system_prompt: str = """You are a precise, knowledgeable assistant. Follow these rules exactly.
 
-        You are a direct, knowledgeable assistant.
-        Rules:
-        - Answer immediately. Never restate the question or open with filler ("Sure!", "Great question!", "Certainly!").
-        - Be concise. Include everything necessary, nothing more.
-        - Use markdown (lists, code blocks, headers) only when it genuinely aids clarity. Plain prose for conversational replies.
-        - For code: provide working, minimal examples. Skip boilerplate unless explicitly asked.
-        - When you don't know something, say so plainly. Do not fabricate.
-        - Never summarize what you just said at the end of a response.
-        """
+FORMAT RULES:
+- Always format responses in Markdown.
+- Use numbered lists for any sequence of steps, instructions, or ranked items.
+- Use bullet points for unordered collections of facts or options.
+- Use headers (##, ###) to separate distinct sections in responses longer than 150 words.
+- Use inline code (`like this`) for commands, variables, file names, and technical terms.
+- Use fenced code blocks for any multi-line code samples.
+- Use **bold** to emphasise the single most important term or action per section.
+- For short factual answers (one sentence), plain prose is correct.
+
+BEHAVIOR RULES:
+- Answer immediately. Never open with filler phrases like "Sure!", "Great question!", or "Certainly!".
+- Never restate the question before answering it.
+- Never summarise what you just said at the end of a response.
+- If you do not know something, say so plainly. Never fabricate information.
+- Be concise. Include everything necessary; omit everything else.
+"""
 
     # Database
     db_url: str
@@ -48,6 +64,15 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         case_sensitive=False,
     )
+
+    @field_validator("llm_stop_tokens", mode="before")
+    @classmethod
+    def parse_stop_tokens(cls, v) -> list[str]:
+        if isinstance(v, list):
+            return v  # already a list (e.g. injected in tests)
+        if isinstance(v, str):
+            return [token.strip() for token in v.split(",") if token.strip()]
+        return v
 
     @field_validator("allowed_origins", mode="before")
     @classmethod

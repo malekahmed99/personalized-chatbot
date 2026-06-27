@@ -1,3 +1,6 @@
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+
 export default function MessageBubble({ msg, onFeedback }) {
   const isBot = msg.role === "assistant" || msg.role === "bot";
 
@@ -6,7 +9,11 @@ export default function MessageBubble({ msg, onFeedback }) {
       <div className="avatar">{!isBot ? "U" : "AI"}</div>
       <div className="bubble-container">
         <div className="bubble">
-          {msg.text}
+          {isBot ? (
+            <ReactMarkdown remarkPlugins={[remarkGfm]}>{msg.text}</ReactMarkdown>
+          ) : (
+            msg.text
+          )}
         </div>
         {isBot && msg.id && (
           <div className="feedback-actions">

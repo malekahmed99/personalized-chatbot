@@ -198,8 +198,13 @@ class LLMClient:
             try:
                 stream = self._llm(
                     prompt,
-                    max_tokens = settings.max_new_tokens,
-                    stop=["<|im_end|>"],
+                    max_tokens=settings.max_new_tokens,
+                    stop=settings.llm_stop_tokens,
+                    temperature=settings.llm_temperature,
+                    top_p=settings.llm_top_p,
+                    top_k=settings.llm_top_k,
+                    repeat_penalty=settings.llm_repeat_penalty,
+                    min_p=settings.llm_min_p,
                     stream=True,
                 )
                 for chunk in stream:

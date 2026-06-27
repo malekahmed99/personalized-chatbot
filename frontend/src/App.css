@@ -600,3 +600,54 @@
   filter: grayscale(0%);
   background: var(--accent-tint);
 }
+
+/* ─── react-markdown rendered content inside bot bubbles ─── */
+.from-bot .bubble p          { margin: 0 0 8px 0; }
+.from-bot .bubble p:last-child { margin-bottom: 0; }
+
+.from-bot .bubble ul,
+.from-bot .bubble ol         { padding-left: 20px; margin: 0 0 8px 0; }
+.from-bot .bubble li         { margin-bottom: 4px; }
+
+.from-bot .bubble h2,
+.from-bot .bubble h3         { font-size: 15px; font-weight: 600; margin: 12px 0 6px; }
+
+/* Inline code */
+.from-bot .bubble code {
+  background: rgba(0, 0, 0, 0.2);
+  padding: 1px 5px;
+  border-radius: 4px;
+  font-family: monospace;
+  font-size: 13px;
+}
+
+/* Code blocks */
+.from-bot .bubble pre {
+  background: rgba(0, 0, 0, 0.25);
+  padding: 10px 12px;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 8px 0;
+}
+.from-bot .bubble pre code { background: none; padding: 0; }
+
+/* GFM tables */
+.from-bot .bubble table {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 8px 0;
+  font-size: 14px;
+}
+.from-bot .bubble th,
+.from-bot .bubble td {
+  border: 1px solid var(--border-dark);
+  padding: 6px 10px;
+  text-align: left;
+}
+.from-bot .bubble th        { background: rgba(0, 0, 0, 0.15); font-weight: 600; }
+
+/* GFM strikethrough */
+.from-bot .bubble del       { opacity: 0.5; }
+
+/* GFM task list checkboxes */
+.from-bot .bubble input[type="checkbox"] { margin-right: 6px; }

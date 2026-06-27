@@ -72,6 +72,7 @@ def format_chat_prompt(
         full_messages,
         tokenize=False,           # Return string, not token ID list
         add_generation_prompt=True,  # Append the <|im_start|>assistant\n suffix
+        enable_thinking=False,    # Disable Qwen3's internal reasoning phase
     )
     return prompt
 
