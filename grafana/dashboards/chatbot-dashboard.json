@@ -1,0 +1,105 @@
+{
+  "title": "Chatbot Monitoring",
+  "uid": "chatbot-main",
+  "timezone": "browser",
+  "refresh": "10s",
+  "schemaVersion": 39,
+  "version": 1,
+  "time": { "from": "now-1h", "to": "now" },
+  "panels": [
+    {
+      "id": 1,
+      "title": "Model Busy? (1 = generating, 0 = idle)",
+      "type": "stat",
+      "gridPos": { "h": 6, "w": 6, "x": 0, "y": 0 },
+      "datasource": "Prometheus",
+      "targets": [{ "expr": "llm_model_busy", "refId": "A" }]
+    },
+    {
+      "id": 2,
+      "title": "423 Busy-Rejection Rate (per sec)",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 9, "x": 6, "y": 0 },
+      "datasource": "Prometheus",
+      "targets": [{ "expr": "rate(llm_busy_rejections_total[5m])", "refId": "A" }]
+    },
+    {
+      "id": 3,
+      "title": "Silent Stream Error Rate",
+      "type": "timeseries",
+      "gridPos": { "h": 6, "w": 9, "x": 15, "y": 0 },
+      "datasource": "Prometheus",
+      "targets": [{ "expr": "rate(llm_stream_errors_total[5m])", "refId": "A" }]
+    },
+    {
+      "id": 4,
+      "title": "Time To First Token (p95, seconds)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 6 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(llm_time_to_first_token_seconds_bucket[5m])) by (le))",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 5,
+      "title": "Total Generation Duration (p95, seconds)",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 6 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(llm_inference_duration_seconds_bucket[5m])) by (le))",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 6,
+      "title": "Tokens Generated / sec",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 14 },
+      "datasource": "Prometheus",
+      "targets": [{ "expr": "rate(llm_tokens_generated_total[1m])", "refId": "A" }]
+    },
+    {
+      "id": 7,
+      "title": "HTTP Request Rate by Route",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 14 },
+      "datasource": "Prometheus",
+      "targets": [
+        { "expr": "sum(rate(http_requests_total[5m])) by (handler)", "refId": "A" }
+      ]
+    },
+    {
+      "id": 8,
+      "title": "HTTP Error Rate by Status Code",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 0, "y": 22 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "sum(rate(http_requests_total{status=~\"4..|5..\"}[5m])) by (status)",
+          "refId": "A"
+        }
+      ]
+    },
+    {
+      "id": 9,
+      "title": "HTTP p95 Latency by Route",
+      "type": "timeseries",
+      "gridPos": { "h": 8, "w": 12, "x": 12, "y": 22 },
+      "datasource": "Prometheus",
+      "targets": [
+        {
+          "expr": "histogram_quantile(0.95, sum(rate(http_request_duration_seconds_bucket[5m])) by (le, handler))",
+          "refId": "A"
+        }
+      ]
+    }
+  ]
+}

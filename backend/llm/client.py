@@ -29,6 +29,8 @@ from llama_cpp import Llama
 
 from core.config import settings
 
+from core.metrics import model_status_gauge, model_busy_gauge
+
 # ── Sentinel — signals end-of-stream from the worker thread ──────────────────
 _SENTINEL = object()
 
@@ -91,6 +93,7 @@ class LLMClient:
         placeholder = object.__new__(cls)
         placeholder._status = ModelStatus.LOADING  # type: ignore[attr-defined]
         cls._instance = placeholder  # type: ignore[assignment]
+        model_status_gauge.set(0) # loading
 
         try:
             # Llama() reads and mmaps the GGUF file. This is the slow step.
@@ -106,10 +109,12 @@ class LLMClient:
             # Semaphore must be created in the running event loop.
             instance._semaphore = asyncio.Semaphore(1)
             cls._instance = instance
+            model_status_gauge.set(1) # idle
 
         except Exception as exc:
             # Keep the placeholder alive so status reads as ERROR, not LOADING.
             placeholder._status = ModelStatus.ERROR  # type: ignore[attr-defined]
+            model_status_gauge.set(3)  # error
             raise RuntimeError(f"LLMClient failed to load model: {exc}") from exc
 
     @classmethod
@@ -229,6 +234,8 @@ class LLMClient:
 
         async with self._semaphore:
             self._status = ModelStatus.PROCESSING
+            model_status_gauge.set(2)  # processing
+            model_busy_gauge.set(1)
             try:
                 # Fire the blocking inference into the thread pool.
                 loop.run_in_executor(None, _run_inference)
@@ -252,3 +259,5 @@ class LLMClient:
                 # exception, or normal completion all land here).
                 stop_event.set()
                 self._status = ModelStatus.IDLE
+                model_status_gauge.set(1)  # idle
+                model_busy_gauge.set(0)

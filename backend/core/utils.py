@@ -1,12 +1,15 @@
 from __future__ import annotations
 
 import json
+import time
 import uuid
 from typing import AsyncGenerator
 
 from fastapi import HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+
+from core.metrics import (inference_duration_seconds, time_to_first_token_seconds, tokens_generated_total, stream_errors_total,)
 
 from llm.client import LLMClient
 from llm.prompt import count_tokens
@@ -61,12 +64,18 @@ async def sse_generator(
 
     # 2. Stream tokens
     full_response: list[str] = []
+    start_time = time.monotonic()
+    first_token_time: float | None = None
     try:
         async for token in client.generate_stream(prompt):
+            if first_token_time is None:
+                first_token_time = time.monotonic()
+                time_to_first_token_seconds.observe(first_token_time - start_time)
             full_response.append(token)
             yield build_sse_event("token", {"token": token})
-    except Exception:
-        pass
+    except Exception as e:
+        stream_errors_total.inc()
+        print(f"[sse_generator] stream error: {e!r}")
 
     # 3. Persist the assistant message
     complete_content = "".join(full_response)
@@ -83,6 +92,10 @@ async def sse_generator(
     db.add(assistant_msg)
     session.updated_at = datetime.now(timezone.utc)
     await db.commit()
+
+    inference_duration_seconds.observe(time.monotonic() - start_time)
+    tokens_generated_total.inc(assistant_token_count)
+
 
     # 4. Signal completion
     yield build_sse_event("message_end", {

@@ -9,6 +9,7 @@ from __future__ import annotations
 import os
 
 from fastapi import APIRouter
+from fastapi.responses import JSONResponse
 
 from core.config import settings
 from llm.client import LLMClient, ModelStatus
@@ -24,6 +25,20 @@ async def health() -> dict:
     """
     return {"status": "ok"}
 
+@router.get("/ready")
+async def readiness() -> dict:
+    """
+    Used by Docker's HEALTHCHECK — unlike /health
+    """
+    try:
+        client = LLMClient.get()
+        current_status = client.status
+    except RuntimeError:
+        return JSONResponse(status_code=503, content={"status": "loading"})
+
+    if current_status == ModelStatus.IDLE:
+        return {"status": "ready"}
+    return JSONResponse(status_code=503, content={"status": current_status.value})
 
 @router.get("/model/status")
 async def model_status() -> dict:
