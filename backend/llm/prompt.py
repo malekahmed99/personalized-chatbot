@@ -4,7 +4,8 @@ llm/prompt.py — Chat template formatting and token counting.
 Responsibilities:
   - Load and cache the HuggingFace AutoTokenizer from TOKENIZER_PATH.
   - Format a list of message dicts into the ChatML prompt string using
-    the Jinja2 template embedded in tokenizer_config.json.
+    the Jinja2 template from settings.llm_chat_template (config-driven fallback
+    for tokenizers that omit the template from tokenizer_config.json).
   - Count tokens in a raw string for storage in the messages.token_count column.
 
 Nothing in this file touches llama_cpp or the GGUF file.
@@ -70,9 +71,10 @@ def format_chat_prompt(
 
     prompt: str = tokenizer.apply_chat_template(
         full_messages,
-        tokenize=False,           # Return string, not token ID list
+        chat_template=settings.llm_chat_template,
+        tokenize=False,              # Return string, not token ID list
         add_generation_prompt=True,  # Append the <|im_start|>assistant\n suffix
-        enable_thinking=False,    # Disable Qwen3's internal reasoning phase
+        enable_thinking=settings.llm_enable_thinking,
     )
     return prompt
 

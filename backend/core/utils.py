@@ -14,6 +14,9 @@ from models.message import Message
 from models.session import Session
 from models.user import User
 from schemas.enums import RoleEnum
+import logging
+
+_logger = logging.getLogger("core.sse")
 
 async def get_owned_session(
     session_id: uuid.UUID,
@@ -64,9 +67,11 @@ async def sse_generator(
     try:
         async for token in client.generate_stream(prompt):
             full_response.append(token)
-            yield build_sse_event("token", {"token": token})
-    except Exception:
-        pass
+            normalized = token.replace("\\n", "\n").replace("\\t", "\t")
+            yield build_sse_event("token", {"token": normalized})
+    except Exception as exc:
+        _logger.error("Inference error: %s", exc, exc_info=True)
+        yield build_sse_event("error", {"detail": "Generation failed. Please retry."})
 
     # 3. Persist the assistant message
     complete_content = "".join(full_response)

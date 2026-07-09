@@ -2,6 +2,7 @@
 main.py — FastAPI application entry point.
 
 Responsibilities:
+  - Logging setup: configures console + rotating file logging before anything else.
   - Lifespan hook: loads the GGUF model into RAM once at startup.
   - CORS middleware: allows the Vite frontend on localhost:5173 to call the API.
   - Router mounting: registers all route groups under their correct prefixes.
@@ -22,6 +23,10 @@ from routers.auth import router as auth_router
 from routers.internal import router as internal_router
 from routers.messages import router as messages_router
 from routers.sessions import router as sessions_router
+import hashlib
+import logging
+
+_logger = logging.getLogger("app.startup")
 
 
 # ── Lifespan ──────────────────────────────────────────────────────────────────
@@ -34,8 +39,18 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     The model (~2.5 GB) stays resident in memory for the entire process lifetime.
     """
     await LLMClient.initialize()
+
+    # Log at startup (before yield) so the hash is visible when the server goes live.
+    _logger.info(
+        "Startup complete | system_prompt_md5=%s | debug=%s",
+        hashlib.md5(settings.llm_system_prompt.encode()).hexdigest(),
+        settings.debug,
+    )
+
     yield
+
     # Teardown (if needed — e.g., explicit resource cleanup in the future)
+    _logger.info("Shutdown initiated.")
 
 
 # ── Application ───────────────────────────────────────────────────────────────

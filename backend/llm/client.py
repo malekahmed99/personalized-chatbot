@@ -29,6 +29,10 @@ from llama_cpp import Llama
 
 from core.config import settings
 
+import logging
+_logger = logging.getLogger("llm.client")
+
+
 # ── Sentinel — signals end-of-stream from the worker thread ──────────────────
 _SENTINEL = object()
 
@@ -103,6 +107,17 @@ class LLMClient:
                 verbose=False,  # Suppress llama.cpp progress output to stderr
             )
             instance = cls(llm)
+
+            _logger.info(
+                "Model loaded | %s | GPU Layers: %s | Context: %d Stop tokens: %s",
+                settings.model_path,
+                "all" if settings.n_gpu_layers == -1 else (
+                    "CPU-only" if settings.n_gpu_layers == 0 else settings.n_gpu_layers
+                ),
+                settings.model_max_context,
+                settings.llm_stop_tokens,
+            )
+            
             # Semaphore must be created in the running event loop.
             instance._semaphore = asyncio.Semaphore(1)
             cls._instance = instance
