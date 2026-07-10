@@ -1,30 +1,61 @@
 """
-CyberSentry agent: loads the fine-tuned Qwen3-4B GGUF model (served via
-Ollama) and wires it into a LangGraph tool-calling loop with all 8
-cybersecurity tools.
+CyberSentry agent: loads the fine-tuned Qwen3-4B GGUF model and wires it
+into a LangGraph tool-calling loop with all 8 cybersecurity tools.
 
-Prerequisite: the model must already be loaded into Ollama, e.g.
-    ollama create cybersentry -f Modelfile
-See Modelfile in this directory for the template setup.
+Supports two backends, chosen via the LLM_BACKEND env var:
+
+  - "llamacpp" (default): connects to llama-cpp-python's OpenAI-compatible
+    server. Start it first with:
+        python -m llama_cpp.server \\
+            --model /content/qwen3-4b-instruct-2507.Q4_K_M.gguf \\
+            --n_ctx 8192 --chat_format chatml-function-calling
+    (or omit --chat_format to use the GGUF's embedded chat template)
+
+  - "ollama": connects to a running Ollama server with the model already
+    loaded via `ollama create <name> -f Modelfile`.
 """
 import os
 from dotenv import load_dotenv
 load_dotenv()  # reads .env from the current working directory
 
 from langchain_core.messages import SystemMessage, HumanMessage
-from langchain_ollama import ChatOllama
 from langgraph.graph import StateGraph, MessagesState, START
 from langgraph.prebuilt import ToolNode, tools_condition
 
 from tools import ALL_TOOLS
 from system_prompt import SYSTEM_PROMPT
 
+LLM_BACKEND = os.getenv("LLM_BACKEND", "llamacpp").lower()
 MODEL_NAME = os.getenv("CYBERSENTRY_MODEL", "cybersentry")
+
+# llama.cpp server settings
+LLAMACPP_BASE_URL = os.getenv("LLAMACPP_BASE_URL", "http://localhost:8000/v1")
+
+# Ollama settings (only used if LLM_BACKEND=ollama)
 OLLAMA_BASE_URL = os.getenv("OLLAMA_BASE_URL", "http://localhost:11434")
 
 
+def _build_llm():
+    if LLM_BACKEND == "ollama":
+        from langchain_ollama import ChatOllama
+        return ChatOllama(model=MODEL_NAME, base_url=OLLAMA_BASE_URL, temperature=0.2)
+
+    if LLM_BACKEND == "llamacpp":
+        from langchain_openai import ChatOpenAI
+        # llama-cpp-python's server mimics the OpenAI API; api_key is
+        # required by the client but ignored by the local server.
+        return ChatOpenAI(
+            model=MODEL_NAME,
+            base_url=LLAMACPP_BASE_URL,
+            api_key="not-needed",
+            temperature=0.2,
+        )
+
+    raise ValueError(f"Unknown LLM_BACKEND '{LLM_BACKEND}', expected 'llamacpp' or 'ollama'.")
+
+
 def build_agent():
-    llm = ChatOllama(model=MODEL_NAME, base_url=OLLAMA_BASE_URL, temperature=0.2)
+    llm = _build_llm()
     llm_with_tools = llm.bind_tools(ALL_TOOLS)
 
     def call_model(state: MessagesState):
