@@ -1,0 +1,28 @@
+# =========================================================
+# docker-compose.gpu.yml
+#
+# ده override صغير جداً لزمايلك اللي عندهم GPU - غرض واحد بس:
+# يخلي الـ container يقدر "يشوف ويستخدم" كارت الشاشة فعلياً وقت التشغيل.
+#
+# اختيار البناء نفسه (CPU/GPU compile) بقى متحكم فيه من BUILD_MODE
+# في ملف .env - مش من هنا. الملف ده بيتظاف بس عشان NVIDIA runtime access.
+#
+# طريقة الاستخدام لزمايلك:
+#   1. في .env بتاعهم: BUILD_MODE=gpu
+#   2. الأمر:
+#      docker compose -f docker-compose.yml -f docker-compose.gpu.yml up --build
+#
+# وانت (CPU) عادي جداً، متلمسش الملف ده خالص:
+#   docker compose up --build
+# =========================================================
+version: "3.8"
+
+services:
+  backend:
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]

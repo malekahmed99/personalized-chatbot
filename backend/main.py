@@ -15,6 +15,7 @@ from typing import AsyncGenerator
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from prometheus_fastapi_instrumentator import Instrumentator
 
 from core.config import settings
 from core.database import get_db  # Ensures models are registered
@@ -74,6 +75,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ── Monitoring ─────────────────────────────────────────────────────────────
+# Add /internal/metrics Auto + Mejar all HTTP requests
+Instrumentator().instrument(app).expose(app, endpoint="/internal/metrics")
 
 # ── Routers ───────────────────────────────────────────────────────────────────
 

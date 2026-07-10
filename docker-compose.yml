@@ -1,0 +1,104 @@
+services:
+  # ================== قاعدة البيانات ==================
+  db:
+    image: postgres:16
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${DB_USER:-db_user}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-db_password}
+      POSTGRES_DB: ${DB_NAME:-chatbot}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-db_user}"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    networks:
+      - chatnet
+
+  # ================== الباك إند + الموديل ==================
+  backend:
+    build:
+      context: ./backend
+      args:
+        # نفس Dockerfile للكل - بس بيتغير سلوكه حسب القيمة دي
+        # انت مش محتاج تغيرها (الافتراضي cpu)
+        # زمايلك اللي عندهم GPU يحطوا BUILD_MODE=gpu في .env بتاعهم
+        BUILD_MODE: ${BUILD_MODE:-cpu}
+    restart: unless-stopped
+    env_file:
+      - ./backend/.env
+    environment:
+      # بيدوس على أي قيمة موجودة في .env عشان الـ host بتاع الداتا بيز
+      # يبقى اسم السيرفس "db" مش localhost
+      DB_URL: postgresql+asyncpg://${DB_USER:-db_user}:${DB_PASSWORD:-db_password}@db:5432/${DB_NAME:-chatbot}
+      MODEL_PATH: /models/${MODEL_FILENAME}
+      TOKENIZER_PATH: /models/tokenizer
+      ALLOWED_ORIGINS: http://localhost
+      COOKIE_SECURE: "false"
+    volumes:
+      # bind mount - الموديل بره الـ image خالص زي ما اتفقنا
+      - ${MODELS_HOST_PATH}:/models:ro
+    depends_on:
+      db:
+        condition: service_healthy
+    expose:
+      - "8000"
+    networks:
+      - chatnet
+
+  # ================== الفرونت إند ==================
+  frontend:
+    build:
+      context: ./frontend
+    restart: unless-stopped
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - chatnet
+
+  # ================== Prometheus ==================
+  prometheus:
+    image: prom/prometheus:latest
+    restart: unless-stopped
+    volumes:
+      - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - promdata:/prometheus
+    ports:
+      - "9090:9090"
+    depends_on:
+      - backend
+    networks:
+      - chatnet
+
+  # ================== Grafana ==================
+  grafana:
+    image: grafana/grafana:latest
+    restart: unless-stopped
+    ports:
+      - "3001:3000"
+    environment:
+      GF_SECURITY_ADMIN_USER: admin
+      GF_SECURITY_ADMIN_PASSWORD: admin
+      # بيمنع Grafana من إجبارك تغير الباسورد أول مرة (تسهيل للمشروع الجامعي فقط)
+      GF_AUTH_ANONYMOUS_ENABLED: "false"
+    volumes:
+      - grafanadata:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning
+      - ./grafana/dashboards:/var/lib/grafana/dashboards
+    depends_on:
+      - prometheus
+    networks:
+      - chatnet
+
+networks:
+  chatnet:
+    driver: bridge
+
+volumes:
+  pgdata:
+  promdata:
+  grafanadata:

@@ -27,7 +27,7 @@ def set_refresh_cookie(response, token: str) -> None:
         key=REFRESH_COOKIE_NAME,
         value=token,
         httponly=True,         # Not accessible from JavaScript
-        secure=False,          # Set to True in production (requires HTTPS)
+        secure=settings.cookie_secure,          # Set to True in production (requires HTTPS)
         samesite="lax",
         max_age=settings.refresh_token_expire_days * 86400,
     )

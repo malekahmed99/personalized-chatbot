@@ -1,0 +1,16 @@
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+scrape_configs:
+  # الباك إند بتاعنا - هيبقى فيه /internal/metrics بعد ما نضيف
+  # الـ instrumentation في الخطوة الجاية
+  - job_name: "chatbot-backend"
+    metrics_path: "/internal/metrics"
+    static_configs:
+      - targets: ["backend:8000"]
+
+  # Prometheus بيراقب نفسه كمان (standard practice)
+  - job_name: "prometheus"
+    static_configs:
+      - targets: ["localhost:9090"]

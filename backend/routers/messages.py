@@ -18,6 +18,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from core.config import settings
 from core.database import get_db
 from core.dependencies import get_current_user
+from core.metrics import busy_rejections_total
 from core.utils import sse_generator
 from llm.client import LLMClient
 from llm.context import fit_history
@@ -48,6 +49,7 @@ async def send_message(
     # 1. Check model busy — MUST happen before any DB write
     client = LLMClient.get()
     if client.is_busy:
+        busy_rejections_total.inc()
         raise HTTPException(
             status_code=status.HTTP_423_LOCKED,
             detail="The model is currently processing another request. Please wait and retry.",
