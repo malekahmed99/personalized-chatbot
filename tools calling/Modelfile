@@ -1,0 +1,22 @@
+# Ollama Modelfile for the fine-tuned CyberSentry model.
+#
+# Usage:
+#   1. Place your GGUF file (e.g. model-q3-k-m.gguf) in this directory,
+#      or update the FROM path below to point at it.
+#   2. Run: ollama create cybersentry -f Modelfile
+#   3. Test: ollama run cybersentry "What is CVE-2024-3400?"
+#
+# NOTE: Ollama's library already ships a "qwen3" base template that
+# includes Hermes-style tool-calling support. If your GGUF was exported
+# with Qwen3's tokenizer_config.json chat_template intact, Ollama will
+# usually pick it up automatically and you may not need the TEMPLATE
+# block below at all -- try without it first, and only add it if tool
+# calls show up as raw text in the response `content` instead of the
+# structured `tool_calls` field.
+
+FROM ./model-q3-k-m.gguf
+
+PARAMETER temperature 0.2
+PARAMETER num_ctx 8192
+
+SYSTEM """You are CyberSentry, a defensive cybersecurity analysis assistant."""
