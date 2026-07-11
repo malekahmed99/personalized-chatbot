@@ -1,7 +1,8 @@
 import { apiFetch } from "./api";
 
 export const messageService = {
-  async streamMessage(token, sessionId, content, onUnauthorized, onToken, onStart, onEnd) {
+  async streamMessage(token, sessionId, content, onUnauthorized,
+                      onToken, onStart, onEnd, onToolCall) {
     const res = await apiFetch(`/api/sessions/${sessionId}/messages`, {
       method: "POST",
       body: JSON.stringify({ content }),
@@ -49,6 +50,9 @@ export const messageService = {
                 onToken(data.token);
               } else if (eventName === "message_end" && onEnd) {
                 onEnd(data);
+              } else if (eventName === "tool_call" && onToolCall) {
+                // data = { tool, status, filename?, file_id? }
+                onToolCall(data);
               }
             } catch (e) {
               console.error("Failed to parse SSE JSON data", e);
