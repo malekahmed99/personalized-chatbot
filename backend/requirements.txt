@@ -3,7 +3,7 @@
 # ==========================================
 
 # --- Core Web Framework ---
-fastapi==0.138.0
+fastapi<0.137.0
 uvicorn==0.49.0
 #starlette==1.3.1
 pydantic==2.13.4
@@ -28,9 +28,7 @@ certifi==2026.6.17
 # --- Large Language Model (LLM) ---
 # NOTE: The default `pip install -r requirements.txt` will install the CPU-only version of llama-cpp-python.
 # For NVIDIA GPU acceleration on Windows (CUDA 12.1 - 12.4+), run this exact command INSTEAD:
-"""
- pip install llama-cpp-python==0.3.31 --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cu124
-"""
+# pip install llama-cpp-python==0.3.31 --extra-index-url https://abetlen.github.io/llama-cpp-python/whl/cu124
 llama_cpp_python==0.3.31
 transformers==5.12.1
 tokenizers==0.22.2
