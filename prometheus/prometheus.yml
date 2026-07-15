@@ -1,16 +1,37 @@
+# =============================================================================
+# prometheus/prometheus.yml — Prometheus scrape configuration
+#
+# This file tells Prometheus which services to collect metrics from and how
+# often to do so. Prometheus works by periodically sending HTTP GET requests
+# to a /metrics endpoint on each configured target ("scraping").
+# =============================================================================
+
 global:
+  # How frequently Prometheus collects metrics from every target.
   scrape_interval: 15s
+  # How frequently Prometheus evaluates any alerting or recording rules.
   evaluation_interval: 15s
 
 scrape_configs:
-  # الباك إند بتاعنا - هيبقى فيه /internal/metrics بعد ما نضيف
-  # الـ instrumentation في الخطوة الجاية
+
+  # ---------------------------------------------------------------------------
+  # NexoBot Backend
+  # Scrapes the custom application metrics exposed by the FastAPI backend.
+  # Metrics include request counts, latency histograms, LLM generation times,
+  # and active session counters — all instrumented in backend/core/metrics.py.
+  # The backend service is reachable by its Docker service name "backend".
+  # ---------------------------------------------------------------------------
   - job_name: "chatbot-backend"
     metrics_path: "/internal/metrics"
     static_configs:
       - targets: ["backend:8000"]
 
-  # Prometheus بيراقب نفسه كمان (standard practice)
+  # ---------------------------------------------------------------------------
+  # Prometheus self-monitoring
+  # Prometheus can scrape its own /metrics endpoint to expose its internal
+  # health and performance data (e.g. scrape duration, sample counts).
+  # This is standard practice and has negligible overhead.
+  # ---------------------------------------------------------------------------
   - job_name: "prometheus"
     static_configs:
       - targets: ["localhost:9090"]
