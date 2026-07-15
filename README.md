@@ -1,14 +1,14 @@
 <div align="center">
 
-# Personalized Chatbot
+# NexoBot
 
-**Your secure, reliable, and completely private local LLM assistant.**
+**Your Tier 1 forensic investigator specializing in code/log security vulnerability reviews and remediation.**
 
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.111+-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
 [![React](https://img.shields.io/badge/React-18+-61DAFB?logo=react&logoColor=black)](https://reactjs.org)
 [![PostgreSQL](https://img.shields.io/badge/PostgreSQL-16-4169E1?logo=postgresql&logoColor=white)](https://www.postgresql.org/)
 [![llama.cpp](https://img.shields.io/badge/llama.cpp-Python-000000?logo=python&logoColor=white)](https://github.com/abetlen/llama-cpp-python)
-[![Qwen](https://img.shields.io/badge/Qwen-4B_Instruct-4B0082)](https://huggingface.co/Qwen)
+[![Docker](https://img.shields.io/badge/Docker-24+-2496ED?logo=docker&logoColor=white)](https://www.docker.com/)
 
 </div>
 
@@ -16,58 +16,72 @@
 
 ## 🧭 Overview
 
-**Personalized Chatbot** is a modern, privacy-first conversational AI platform. By leveraging powerful local large language models executed entirely on your own hardware, it guarantees that your chats, prompts, and sensitive data never leave your machine. 
+**NexoBot** is a modern, privacy-first conversational AI platform transformed into a specialized Tier 1 forensic investigator. By leveraging powerful local large language models executed entirely on your own hardware, it guarantees that your chats, prompts, and sensitive security logs never leave your machine.
 
-It combines a high-performance **FastAPI** asynchronous backend with a sleek, responsive **React + Vite** frontend. The architecture supports full session management, real-time message streaming via Server-Sent Events (SSE), secure JWT authentication, and structured chat feedback mechanisms. It's built for those who want the power of advanced AI without compromising on speed, security, or data ownership.
+NexoBot is uniquely designed for cybersecurity analysis, developer crash/error diagnosis, and cyber-defense. Beyond just chatting, it includes **agentic tool calling** (such as automated forensic report writing) and a robust observability infrastructure utilizing **Docker, Prometheus, and Grafana**. The architecture supports full session management, real-time message streaming via Server-Sent Events (SSE), and secure JWT authentication. 
 
 ---
 
 ## 📁 Project Structure
 
 ```text
-Personalized Chatbot/
+NexoBot/
 │
 ├── backend/                           # FastAPI application and Python backend
-│   ├── alembic/                       # Database migration scripts directory
+│   ├── alembic/                       # Alembic database migration framework
+│   │   ├── versions/                  # Auto-generated migration revision files
+│   │   │   ├── 001_initial_schema.py
+│   │   │   ├── 002_add_user_password_hash.py
+│   │   │   └── 003_add_tool_role_to_messages.py
+│   │   │
+│   │   ├── env.py                     # Alembic runtime environment config
+│   │   └── script.py.mako             # Template for generating new migration files
+│   │
 │   ├── core/                          # Application core layer
-│   │   ├── __init__.py                
-│   │   ├── config.py                  # Pydantic Settings — loads all .env variables
+│   │   ├── config.py                  # Pydantic Settings — loads all .env variables & system prompt
 │   │   ├── database.py                # SQLAlchemy engine, session creation, and async config
 │   │   ├── dependencies.py            # FastAPI Depends guards: get_current_user, get_db
+│   │   ├── metrics.py                 # Prometheus metrics instrumentation
 │   │   ├── security.py                # bcrypt password hashing and JWT token creation/verification
 │   │   └── utils.py                   # Shared utility functions and helpers
 │   │
 │   ├── llm/                           # Artificial Intelligence integration layer
-│   │   ├── __init__.py
 │   │   ├── client.py                  # Direct interface with the local GGUF model via llama-cpp
 │   │   ├── context.py                 # Chat history context window management and truncation
 │   │   └── prompt.py                  # Prompt engineering and ChatML template formatting
 │   │
 │   ├── models/                        # SQLAlchemy ORM — defines the actual database tables
-│   │   ├── __init__.py
 │   │   ├── feedback.py                # User feedback (thumbs up/down) for AI messages
-│   │   ├── file.py                    # Metadata for uploaded files (if applicable)
-│   │   ├── message.py                 # Individual chat messages (user and assistant roles)
+│   │   ├── file.py                    # Metadata for uploaded files
+│   │   ├── message.py                 # Individual chat messages (user, assistant, and tool roles)
 │   │   ├── session.py                 # Chat sessions (groups messages together)
 │   │   └── user.py                    # Registered users and authentication credentials
 │   │
 │   ├── routers/                       # FastAPI route handler files
-│   │   ├── __init__.py
 │   │   ├── auth.py                    # POST /auth/register, /auth/login
-│   │   ├── internal.py                # Internal admin or health check routes
-│   │   ├── messages.py                # POST /messages, handles streaming responses
+│   │   ├── files.py                   # File upload and retrieval endpoints
+│   │   ├── internal.py                # Internal admin and health check routes
+│   │   ├── messages.py                # POST /messages — handles streaming & tool-call responses
 │   │   └── sessions.py                # CRUD for chat sessions (create, list, delete)
 │   │
 │   ├── schemas/                       # Pydantic v2 — request/response validation shapes
-│   │   ├── __init__.py
 │   │   ├── auth.py                    # User validation and JWT token schemas
-│   │   ├── enums.py                   # Shared enumerations (e.g., MessageRole)
+│   │   ├── enums.py                   # Shared enumerations (MessageRole)
 │   │   ├── feedback.py                # Feedback submission validation
 │   │   ├── message.py                 # Message creation and response formatting
 │   │   └── session.py                 # Session metadata schemas
 │   │
-│   ├── alembic.ini                    # Alembic configuration for DB migrations
-│   ├── main.py                        # FastAPI app entrypoint — registers routers, CORS, DB
+│   ├── storage/                       # Persistent file storage
+│   │   └── reports/                   # Output directory for generated forensic reports
+│   │
+│   ├── tools/                         # Agentic tool calling implementations
+│   │   ├── registry.py                # Tool registry — maps tool names to handler functions
+│   │   ├── report.py                  # Forensic report generation tool (write_report)
+│   │   └── schemas.py                 # Pydantic schemas for tool call/result payloads
+│   │
+│   ├── Dockerfile                     # Container image definition for the backend service
+│   ├── alembic.ini                    # Alembic configuration file
+│   ├── main.py                        # FastAPI app entrypoint — registers routers, CORS, metrics
 │   └── requirements.txt               # Python dependency list
 │
 ├── frontend/                          # React 18 + Vite web application
@@ -78,7 +92,8 @@ Personalized Chatbot/
 │   │   │   ├── MessageBubble.jsx      # Individual chat bubble UI
 │   │   │   ├── MessageInput.jsx       # Textarea for typing messages with auto-resize
 │   │   │   ├── Register.jsx           # New account registration form
-│   │   │   ├── Sidebar.jsx            # Left navigation: past sessions, new chat button, logout
+│   │   │   ├── Sidebar.jsx            # Left navigation: past sessions, new chat, logout
+│   │   │   ├── ToolStatusBar.jsx      # Displays active tool call status during response
 │   │   │   └── TypingIndicator.jsx    # Animated loading dots for AI response generation
 │   │   │
 │   │   ├── contexts/                  # Global React Context providers
@@ -90,6 +105,7 @@ Personalized Chatbot/
 │   │   ├── services/                  # Raw API call wrappers (fetch)
 │   │   │   ├── api.js                 # Base API client with JWT interceptors
 │   │   │   ├── authService.js         # login(), register(), refresh(), logout()
+│   │   │   ├── fileService.js         # File upload service
 │   │   │   ├── messageService.js      # streamMessage() via SSE, submitFeedback()
 │   │   │   └── sessionService.js      # createSession(), listSessions(), getSession()
 │   │   │
@@ -98,11 +114,31 @@ Personalized Chatbot/
 │   │   ├── index.css                  # Global CSS variables, resets, and typography
 │   │   └── main.jsx                   # React DOM root mount
 │   │
+│   ├── Dockerfile                     # Container image definition for the frontend service
+│   ├── nginx.conf                     # Nginx config for serving the built frontend in Docker
 │   ├── index.html                     # Vite HTML entry point
 │   ├── package.json                   # npm dependencies & scripts
 │   └── vite.config.js                 # Vite config (proxy routing to backend)
 │
-├── .env.example                       # Template for environment variables
+├── grafana/                           # Grafana observability configuration
+│   ├── dashboards/
+│   │   └── chatbot-dashboard.json     # Pre-built NexoBot metrics dashboard definition
+│   └── provisioning/
+│       ├── dashboards/
+│       │   └── dashboard.yml          # Grafana dashboard provisioning config
+│       └── datasources/
+│           └── datasource.yml         # Prometheus datasource configuration for Grafana
+│
+├── notebook/                          # Model fine-tuning resources
+│   └── Qwen3_(4B)_Instruct_cypersecurity.ipynb  # Fine-tuning notebook for the cybersecurity model
+│
+├── prometheus/                        # Prometheus monitoring configuration
+│   └── prometheus.yml                 # Scrape configs and alerting rules
+│
+├── docker-compose.yml                 # Base Docker Compose — full stack orchestration
+├── docker-compose.gpu.yml             # GPU override — enables CUDA for llama-cpp service
+├── .env.example                       # Template for all required environment variables
+├── alembic.ini                        # Root-level Alembic configuration alias
 └── README.md                          # Project documentation
 ```
 
@@ -110,93 +146,66 @@ Personalized Chatbot/
 
 ## ⚙️ Installation & Setup
 
-Follow these steps to get the local LLM chatbot up and running on your machine.
+Follow these steps to get NexoBot up and running locally with full GPU acceleration and observability.
 
 ### 1. Prerequisites
 Ensure you have the following installed on your system before proceeding:
 - **Python 3.13+**
 - **Node.js 25.2.1+**
-- **PostgreSQL** installed and running locally.
+- **Docker & Docker Compose**
+- **NVIDIA GPU & CUDA Toolkit:** Highly recommended for optimal performance.
+  - Download the CUDA driver here: [CUDA Toolkit 12.4.0 Download](https://developer.nvidia.com/cuda-12-4-0-download-archive?target_os=Windows&target_arch=x86_64&target_version=11&target_type=exe_local)
 
-### 2. Database Setup
-You need to create a dedicated user and database for the application. Open your PostgreSQL terminal (or a GUI tool like pgAdmin) and execute the following SQL commands:
-
-```sql
-CREATE USER [your name] WITH PASSWORD '[your password]';
-CREATE DATABASE [your database name] OWNER [your name];
-```
-
-### 3. Clone the Repository
+### 2. Clone the Repository
 Clone the project repository to your local machine and navigate into it:
 
 ```bash
-git clone https://github.com/malekahmed99/personalized-chatbot.git
-cd <repository-directory>
+git clone https://github.com/malekahmed99/chat-ui.git
+cd chat-ui
 ```
 
-### 4. Local Model Download
-This application requires a local AI model to function.
-1. Download the **Qwen `.gguf` model file** and its associated **JSON tokenizer files** from this [Hugging Face repository](https://github.com/Ali-Islam111).
-2. You can save these files anywhere on your local machine. 
+### 3. Local Model Download
+This application requires a local AI model fine-tuned for cybersecurity forensics.
+1. Download the **Qwen cybersecurity `.gguf` model file** and its associated **JSON tokenizer files** from this [Hugging Face repository](https://huggingface.co/basilmh25/qwen_Cybersecucity).
+2. Save these files in a designated folder on your machine (e.g., inside a `models/` directory).
 3. **Important:** Make note of the *absolute paths* to both the `.gguf` file and the folder containing the tokenizer files, as you will need them for the environment configuration.
 
-### 5. Backend Setup
-Navigate to the backend directory, set up a Python virtual environment, and install the required dependencies:
+### 4. Environment Configuration (.env)
+Create your environment variables file in the `backend/` directory by copying the provided example:
 
 ```bash
 cd backend
-
-# Create the virtual environment
-python -m venv venv
-
-# Activate the virtual environment
-# On Windows:
-venv\Scripts\activate
-# On macOS/Linux:
-source venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-```
-
-### 6. Environment Configuration (.env)
-While inside the `backend` directory, create your environment variables file by copying the provided example:
-
-```bash
 cp .env.example .env
 ```
 
 > [!CAUTION]
-> You **must** open the new `.env` file and replace the placeholder values before running the application. The app will fail to start if these are missing or incorrect.
+> You **must** open the new `.env` file and replace the placeholder values.
 
-Specifically, ensure these four variables are updated:
-- `DB_URL`: Must match the PostgreSQL credentials created in Step 2. 
-  *(Example: `postgresql+asyncpg://[your name]:[your password]@[localhost]:5432/[your database name]`)*
-- `MODEL_PATH`: The absolute file path to the `.gguf` model downloaded in Step 4.
-- `TOKENIZER_PATH`: The absolute directory path to the folder containing the tokenizer JSON files from Step 4.
+Specifically, ensure these variables are updated:
+- `DB_URL`: The PostgreSQL connection string. If using Docker, point it to the postgres container.
+- `MODEL_PATH`: The absolute file path to the `.gguf` model downloaded in Step 3.
+- `TOKENIZER_PATH`: The absolute directory path to the folder containing the tokenizer JSON files from Step 3.
 - `SECRET_KEY`: Replace the default string with a secure, random cryptographic string.
+- `N_GPU_LAYERS`: Set this to **`-1`** to offload all layers to your GPU. This requires the CUDA driver installed from Step 1.
 
-### 7. Frontend Setup
-Open a new terminal window, navigate to the frontend directory, and install the Node modules:
+### 5. Running the Application via Docker
+
+NexoBot is fully containerized, including the database, monitoring stack (Prometheus & Grafana), and backend/frontend services. 
+
+To run the application with GPU acceleration, use both the base compose file and the GPU override:
 
 ```bash
-cd frontend
-npm install
+# Return to the root directory
+cd ..
+
+# Start the full stack with GPU support
+docker-compose -f docker-compose.yml -f docker-compose.gpu.yml up --build
 ```
 
-### 8. Running the Application
-To run the application, you will need two separate terminal windows running simultaneously.
+*(Note: If you do not have a GPU, you can run `docker-compose up --build` without the GPU override file, but performance will be severely degraded).*
 
-**Terminal 1 (Backend):**
-Ensure your virtual environment is activated, then start the FastAPI server:
-```bash
-cd backend
-python main.py
-```
-
-**Terminal 2 (Frontend):**
-Start the Vite development server:
-```bash
-cd frontend
-npm run dev
-```
+Once the containers are up:
+- **Frontend UI:** `http://localhost:5173` (or the port specified in your compose file)
+- **Backend API:** `http://localhost:8000`
+- **Prometheus:** `http://localhost:9090`
+- **Grafana:** `http://localhost:3000`
