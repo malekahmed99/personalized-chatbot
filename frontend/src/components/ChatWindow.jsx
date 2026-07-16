@@ -2,8 +2,9 @@ import { useEffect, useRef } from "react";
 import MessageBubble from "./MessageBubble";
 import MessageInput from "./MessageInput";
 import TypingIndicator from "./TypingIndicator";
+import ToolStatusBar from "./ToolStatusBar";
 
-export default function ChatWindow({ sessionTitle, messages, isSending, onSend, onFeedback, onToggleSidebar }) {
+export default function ChatWindow({ sessionTitle, messages, isSending, toolState, onSend, onFeedback, onDownload, onToggleSidebar }) {
   const bottomRef = useRef(null);
 
   // Auto-scroll to the latest message whenever the conversation changes.
@@ -30,12 +31,13 @@ export default function ChatWindow({ sessionTitle, messages, isSending, onSend, 
           </div>
         )}
         {messages.map((msg, i) => (
-          <MessageBubble key={msg.id || i} msg={msg} onFeedback={onFeedback} />
+          <MessageBubble key={msg.id || i} msg={msg} onFeedback={onFeedback} onDownload={onDownload} />
         ))}
         {isSending && <TypingIndicator />}
         <div ref={bottomRef} />
       </div>
 
+      <ToolStatusBar toolState={toolState} />
       <MessageInput disabled={isSending} onSend={onSend} />
     </main>
   );

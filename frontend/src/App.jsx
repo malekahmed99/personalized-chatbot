@@ -6,6 +6,7 @@ import Register from "./components/Register";
 import { useAuth } from "./hooks/useAuth";
 import { sessionService } from "./services/sessionService";
 import { messageService } from "./services/messageService";
+import { fileService } from "./services/fileService";
 import "./App.css";
 
 export default function App() {
@@ -17,6 +18,9 @@ export default function App() {
   const [messages, setMessages] = useState([]);
   const [isSending, setIsSending] = useState(false);
   const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  // Tracks whether a backend tool (e.g. report generation) is running.
+  // null = inactive, { status: "running"|"done", tool, filename?, fileId? }
+  const [toolState, setToolState] = useState(null);
 
   const isStreamingRef = useRef(false);
   const assistantMsgIdRef = useRef(null);
@@ -191,13 +195,41 @@ export default function App() {
           });
           setIsSending(false); // Hide generic typing indicator since streaming started
         },
-        // onEnd: Refresh session list to update title if it was auto-generated
+        // onEnd: Clear toolState, stamp fileId onto message, refresh session list
         (data) => {
           isStreamingRef.current = false;
+
+          // If this turn ended a tool call, attach the fileId to the confirmation bubble
+          // so the download button persists after streaming ends.
+          setToolState(prev => {
+            if (prev?.status === "done" && prev?.fileId) {
+              const fid = prev.fileId;
+              setMessages(msgs => msgs.map(m =>
+                m.id === data.assistant_message_id
+                  ? { ...m, fileId: fid }
+                  : m
+              ));
+            }
+            return null; // Clear the status bar
+          });
+
           sessionService.listSessions(accessToken, handleUnauthorized)
             .then(res => setSessions(res.sessions))
             .catch(console.error);
-        }
+        },
+        // onToolCall: Update the tool status bar state
+        (data) => {
+          if (data.status === "running") {
+            setToolState({ status: "running", tool: data.tool });
+          } else if (data.status === "done") {
+            setToolState({
+              status: "done",
+              tool: data.tool,
+              filename: data.filename,
+              fileId: data.file_id,
+            });
+          }
+        },
       );
     } catch (err) {
       isStreamingRef.current = false;
@@ -222,6 +254,14 @@ export default function App() {
       }
     } catch (err) {
       console.error("Feedback failed:", err);
+    }
+  }
+
+  async function handleDownload(fileId, filename) {
+    try {
+      await fileService.downloadFile(accessToken, fileId, filename, handleUnauthorized);
+    } catch (err) {
+      console.error("Download failed:", err);
     }
   }
 
@@ -255,8 +295,10 @@ export default function App() {
         sessionTitle={currentSession?.title || "New chat"}
         messages={messages}
         isSending={isSending}
+        toolState={toolState}
         onSend={handleSend}
         onFeedback={handleFeedback}
+        onDownload={handleDownload}
         onToggleSidebar={() => setIsSidebarOpen((open) => !open)}
       />
     </div>

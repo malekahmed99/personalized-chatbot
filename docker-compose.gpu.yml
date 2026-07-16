@@ -1,20 +1,27 @@
-# =========================================================
-# docker-compose.gpu.yml
+# =============================================================================
+# docker-compose.gpu.yml — GPU runtime override
 #
-# ده override صغير جداً لزمايلك اللي عندهم GPU - غرض واحد بس:
-# يخلي الـ container يقدر "يشوف ويستخدم" كارت الشاشة فعلياً وقت التشغيل.
+# This file is a Docker Compose override. It does NOT stand alone; it must be
+# combined with the base docker-compose.yml file using the -f flag (see below).
 #
-# اختيار البناء نفسه (CPU/GPU compile) بقى متحكم فيه من BUILD_MODE
-# في ملف .env - مش من هنا. الملف ده بيتظاف بس عشان NVIDIA runtime access.
+# PURPOSE:
+#   This file grants the backend container access to the host's NVIDIA GPU at
+#   runtime. Without this, the container cannot see or use any GPU hardware,
+#   even if llama-cpp-python was compiled with CUDA support.
 #
-# طريقة الاستخدام لزمايلك:
-#   1. في .env بتاعهم: BUILD_MODE=gpu
-#   2. الأمر:
-#      docker compose -f docker-compose.yml -f docker-compose.gpu.yml up --build
+# PREREQUISITES (on the host machine):
+#   - An NVIDIA GPU
+#   - NVIDIA CUDA drivers installed (https://developer.nvidia.com/cuda-downloads)
+#   - The NVIDIA Container Toolkit installed (https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/)
+#   - BUILD_MODE=gpu set in ./backend/.env so the backend image is compiled with CUDA
 #
-# وانت (CPU) عادي جداً، متلمسش الملف ده خالص:
+# HOW TO USE (GPU build):
+#   docker compose -f docker-compose.yml -f docker-compose.gpu.yml up --build
+#
+# HOW TO USE (CPU-only build — ignore this file entirely):
 #   docker compose up --build
-# =========================================================
+# =============================================================================
+
 version: "3.8"
 
 services:
@@ -23,6 +30,8 @@ services:
       resources:
         reservations:
           devices:
+            # Request access to 1 NVIDIA GPU with general compute capabilities.
+            # Docker passes the GPU through to the container via the NVIDIA runtime.
             - driver: nvidia
               count: 1
               capabilities: [gpu]

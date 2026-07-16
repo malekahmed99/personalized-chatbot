@@ -1,15 +1,26 @@
 services:
-  # ================== قاعدة البيانات ==================
+
+  # ===========================================================================
+  # PostgreSQL — Relational database for users, sessions, and messages.
+  # ===========================================================================
   db:
     image: postgres:16
+    # Automatically restart the container if it crashes, unless it was
+    # explicitly stopped by the user.
     restart: unless-stopped
     environment:
+      # These values are read from your .env file. If a variable is not set,
+      # the fallback value after :- is used (e.g. "db_user").
       POSTGRES_USER: ${DB_USER:-db_user}
       POSTGRES_PASSWORD: ${DB_PASSWORD:-db_password}
       POSTGRES_DB: ${DB_NAME:-chatbot}
     volumes:
+      # Named volume: persists the database data on the host machine so it
+      # survives container restarts and rebuilds.
       - pgdata:/var/lib/postgresql/data
     healthcheck:
+      # Docker will poll this command to decide when the database is ready
+      # to accept connections before allowing dependent services to start.
       test: ["CMD-SHELL", "pg_isready -U ${DB_USER:-db_user}"]
       interval: 5s
       timeout: 5s
@@ -17,55 +28,78 @@ services:
     networks:
       - chatnet
 
-  # ================== الباك إند + الموديل ==================
+  # ===========================================================================
+  # Backend — FastAPI application that serves the API and runs the LLM.
+  # ===========================================================================
   backend:
     build:
       context: ./backend
       args:
-        # نفس Dockerfile للكل - بس بيتغير سلوكه حسب القيمة دي
-        # انت مش محتاج تغيرها (الافتراضي cpu)
-        # زمايلك اللي عندهم GPU يحطوا BUILD_MODE=gpu في .env بتاعهم
+        # Controls whether llama-cpp-python is compiled with CUDA (GPU) support.
+        # Defaults to "cpu". Set BUILD_MODE=gpu in your .env to enable GPU builds.
         BUILD_MODE: ${BUILD_MODE:-cpu}
     restart: unless-stopped
     env_file:
+      # Load all environment variables defined in the backend's .env file.
       - ./backend/.env
     environment:
-      # بيدوس على أي قيمة موجودة في .env عشان الـ host بتاع الداتا بيز
-      # يبقى اسم السيرفس "db" مش localhost
+      # Override DB_URL so the backend connects to the "db" service by its
+      # Docker network hostname, not "localhost" (which wouldn't resolve inside
+      # the container network).
       DB_URL: postgresql+asyncpg://${DB_USER:-db_user}:${DB_PASSWORD:-db_password}@db:5432/${DB_NAME:-chatbot}
+      # Map the model file and tokenizer directory to their paths inside the container.
       MODEL_PATH: /models/${MODEL_FILENAME}
       TOKENIZER_PATH: /models/tokenizer
+      # Allow the frontend container to make cross-origin requests to the backend.
       ALLOWED_ORIGINS: http://localhost
+      # Set to "true" in production behind HTTPS to enforce secure cookies.
       COOKIE_SECURE: "false"
     volumes:
-      # bind mount - الموديل بره الـ image خالص زي ما اتفقنا
+      # Bind-mount the local model directory into the container as read-only.
+      # The model file lives on the host and is never baked into the image,
+      # keeping the image size manageable.
       - ${MODELS_HOST_PATH}:/models:ro
     depends_on:
+      # Wait for the database to pass its health check before starting the backend.
       db:
         condition: service_healthy
+    # "expose" makes port 8000 available to other services on the same Docker
+    # network, but does NOT publish it to the host machine.
     expose:
       - "8000"
     networks:
       - chatnet
 
-  # ================== الفرونت إند ==================
+  # ===========================================================================
+  # Frontend — React + Vite app served by Nginx.
+  # ===========================================================================
   frontend:
     build:
       context: ./frontend
     restart: unless-stopped
     ports:
+      # Publish port 80 on the host, mapping it to port 80 inside the container.
+      # Access the UI at http://localhost in your browser.
       - "80:80"
     depends_on:
       - backend
     networks:
       - chatnet
 
-  # ================== Prometheus ==================
+  # ===========================================================================
+  # Prometheus — Metrics collection and time-series database.
+  # Scrapes the /internal/metrics endpoint exposed by the backend on a schedule
+  # and stores the data for Grafana to query and visualise.
+  # Access the Prometheus UI at http://localhost:9090
+  # ===========================================================================
   prometheus:
     image: prom/prometheus:latest
     restart: unless-stopped
     volumes:
+      # Mount our custom scrape config as read-only. Prometheus reads this file
+      # on startup to know which services to collect metrics from.
       - ./prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      # Named volume to persist collected metrics data across container restarts.
       - promdata:/prometheus
     ports:
       - "9090:9090"
@@ -74,19 +108,28 @@ services:
     networks:
       - chatnet
 
-  # ================== Grafana ==================
+  # ===========================================================================
+  # Grafana — Metrics visualisation and dashboarding tool.
+  # Connects to Prometheus as a data source and renders the pre-built dashboards
+  # defined in ./grafana/dashboards/.
+  # Access the Grafana UI at http://localhost:3001  (login: admin / admin)
+  # ===========================================================================
   grafana:
     image: grafana/grafana:latest
     restart: unless-stopped
     ports:
+      # Grafana runs on 3000 internally; we map it to 3001 on the host to avoid
+      # conflicts with other local services that may use port 3000.
       - "3001:3000"
     environment:
       GF_SECURITY_ADMIN_USER: admin
       GF_SECURITY_ADMIN_PASSWORD: admin
-      # بيمنع Grafana من إجبارك تغير الباسورد أول مرة (تسهيل للمشروع الجامعي فقط)
+      # Disable anonymous access — users must log in with the credentials above.
       GF_AUTH_ANONYMOUS_ENABLED: "false"
     volumes:
+      # Named volume to persist Grafana settings, plugins, and user data.
       - grafanadata:/var/lib/grafana
+      # Auto-provision datasources (Prometheus) and dashboards on first startup.
       - ./grafana/provisioning:/etc/grafana/provisioning
       - ./grafana/dashboards:/var/lib/grafana/dashboards
     depends_on:
@@ -94,11 +137,21 @@ services:
     networks:
       - chatnet
 
+# =============================================================================
+# Networks
+# All services are placed on a shared bridge network so they can reach each
+# other by service name (e.g. the backend resolves "db" to the postgres container).
+# =============================================================================
 networks:
   chatnet:
     driver: bridge
 
+# =============================================================================
+# Volumes
+# Named volumes are managed by Docker and persist data even when containers
+# are stopped or rebuilt. To fully reset the data, run: docker compose down -v
+# =============================================================================
 volumes:
-  pgdata:
-  promdata:
-  grafanadata:
+  pgdata:       # PostgreSQL database files
+  promdata:     # Prometheus time-series metrics data
+  grafanadata:  # Grafana dashboards, settings, and plugins
