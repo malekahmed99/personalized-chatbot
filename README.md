@@ -166,7 +166,7 @@ cd NexoBot
 
 ### 3. Local Model Download
 This application requires a local AI model fine-tuned for cybersecurity forensics.
-1. Download the **Qwen cybersecurity `.gguf` model file** and its associated **JSON tokenizer files** from this [Hugging Face repository](https://huggingface.co/basilmh25/qwen_Cybersecucity).
+1. Download the **Qwen cybersecurity `.gguf` model file** and its associated **JSON tokenizer files** from this [Hugging Face repository](https://huggingface.co/basilmh25/qwen_fine-tune_Cybersecurity).
 2. Save these files in a designated folder on your machine (e.g., inside a `models/` directory).
 3. **Important:** Make note of the *absolute paths* to both the `.gguf` file and the folder containing the tokenizer files, as you will need them for the environment configuration.
 
@@ -219,6 +219,6 @@ NexoBot was built as a team project for the **Digital Egypt Pioneers Initiative 
 
 | Team Member | Role | Key Contributions |
 |-------------|------|-------------------|
-| **Malek Ahmed** | Frontend Engineer | Built the entire React frontend from scratch — authentication UI (Login/Register), JWT session management via React Context, real-time SSE message streaming, chat session management, file upload interface, Tool Status Bar, responsive sidebar, and the full Nginx + Docker containerization of the frontend service |
-| **Basil Mohamed** | AI / ML Engineer | Fine-tuned the Qwen 3 (4B) model on a custom cybersecurity dataset, published the GGUF model on Hugging Face |
-| **Ali Islam** | Backend Engineer | FastAPI application, PostgreSQL schema & Alembic migrations, agentic tool calling, Prometheus metrics, JWT auth backend |
+| **Malek Ahmed** | Frontend Engineer & Infrastructure | Built the React 18 + Vite frontend UI, and set up the full production infrastructure including Docker containerization of all services, Nginx reverse-proxy configuration, Docker Compose stack orchestration (CPU and GPU variants), Prometheus scrape configuration, and the Grafana observability dashboard with pre-built NexoBot metrics |
+| **Basil Mohamed** | AI / ML Engineer | Fine-tuned the Qwen3 (4B) instruct model on a custom cybersecurity domain dataset ([AlicanKiraz0/Cybersecurity-Dataset-Fenrir-v2.1](https://huggingface.co/datasets/AlicanKiraz0/Cybersecurity-Dataset-Fenrir-v2.1)) and published the resulting GGUF-quantized weights and tokenizers to Hugging Face. |
+| **Ali Islam** | Backend Engineer | Built the FastAPI backend: JWT authentication & authorization, PostgreSQL schema design and Alembic migrations, the full LLM integration layer — an async inference engine built on **llama-cpp-python** with GPU/CUDA support, context window management, ChatML prompt engineering, and real-time token streaming via SSE, the agentic tool-calling system with a tool registry and automated forensic report generation |
