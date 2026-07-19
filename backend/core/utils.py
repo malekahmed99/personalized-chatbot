@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 import time
 import uuid
 from typing import AsyncGenerator
@@ -24,13 +25,72 @@ from models.session import Session
 from models.user import User
 from schemas.enums import RoleEnum
 
-import logging
-
 _logger = logging.getLogger("core.sse")
 
 # Tag boundaries the orchestrator watches for in the token stream.
 _TOOL_CALL_OPEN = "<tool_call>"
 _TOOL_CALL_CLOSE = "</tool_call>"
+
+# ── LLM title summarization ───────────────────────────────────────────────────
+
+_TITLE_SYSTEM_PROMPT = (
+    "You are a chat title generator. "
+    "Given a user message, reply with ONLY a concise 4-6 word title that "
+    "summarises the topic. No punctuation at the end, no quotes, no explanation."
+)
+
+
+async def _summarize_and_title(
+    client: "LLMClient",
+    session_id: uuid.UUID,
+    user_message: str,
+    db: AsyncSession,
+) -> None:
+    """
+    Coroutine: generate a short LLM title for a new session and persist it.
+
+    Awaited synchronously inside sse_generator BEFORE yielding message_end,
+    so the title is committed to the DB by the time the frontend's onEnd
+    callback fires and calls listSessions(). No race condition.
+
+    The main inference semaphore is already released by the time this is
+    called (the token-streaming loop has fully exhausted), so calling
+    generate_stream() again here is safe.
+    """
+    def _word_slice_fallback(text: str) -> str:
+        words = text.strip().split()
+        return " ".join(words[:5]) + ("..." if len(words) > 5 else "")
+
+    try:
+        messages = [{"role": "user", "content": user_message}]
+        prompt = format_chat_prompt(
+            messages=messages,
+            system_prompt=_TITLE_SYSTEM_PROMPT,
+            tools=None,  # No tool calling for title generation
+        )
+
+        title_tokens: list[str] = []
+        async for token in client.generate_stream(prompt):
+            title_tokens.append(token)
+
+        raw_title = "".join(title_tokens).strip()
+        # Strip surrounding quotes some models add, cap at 80 chars
+        title = raw_title.strip('"\' ').replace("\n", " ")[:80] or _word_slice_fallback(user_message)
+
+    except Exception as exc:
+        _logger.warning("Title summarization failed (%s); using word-slice fallback.", exc)
+        title = _word_slice_fallback(user_message)
+
+    try:
+        await db.execute(
+            update(Session)
+            .where(Session.id == session_id)
+            .values(title=title)
+        )
+        await db.commit()
+        _logger.info("Session %s titled: %r", session_id, title)
+    except Exception as exc:
+        _logger.error("Failed to persist session title: %s", exc)
 
 
 async def get_owned_session(
@@ -239,6 +299,13 @@ async def sse_generator(
         # in the chat bubble before message_end arrives.
         yield build_sse_event("token", {"token": confirmation_text})
 
+        # Await title summarization before yielding message_end so the title
+        # is already committed when the frontend's onEnd → listSessions() fires.
+        # The main inference semaphore was released when the token loop exited,
+        # so calling generate_stream() again here is safe.
+        if session.title is None:
+            await _summarize_and_title(client, session_id, messages[0]["content"], db)
+
         yield build_sse_event("message_end", {
             "assistant_message_id": str(assistant_message_id),
             "token_count": count_tokens(confirmation_text),
@@ -269,6 +336,13 @@ async def sse_generator(
 
     inference_duration_seconds.observe(time.monotonic() - start_time)
     tokens_generated_total.inc(assistant_token_count)
+
+    # Await title summarization before yielding message_end so the title
+    # is already committed when the frontend's onEnd → listSessions() fires.
+    # The main inference semaphore was released when the token loop exited,
+    # so calling generate_stream() again here is safe.
+    if session.title is None:
+        await _summarize_and_title(client, session_id, messages[0]["content"], db)
 
     yield build_sse_event("message_end", {
         "assistant_message_id": str(assistant_message_id),

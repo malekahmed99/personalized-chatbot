@@ -160,6 +160,8 @@
 }
 
 .session-title {
+  display: block;
+  width: 100%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -343,7 +345,10 @@
   border-radius: var(--radius-md);
   padding: 12px 14px;
   font-size: 15px;
-  max-height: 140px;
+  line-height: 1.5;
+  max-height: 120px; /* ~5 lines */
+  overflow-y: auto;
+  transition: height 0.1s ease;
 }
 
 .message-input textarea:focus {
