@@ -332,6 +332,7 @@
 
 .message-input {
   display: flex;
+  align-items: flex-end;
   gap: 10px;
   padding: 16px 24px;
   border-top: 1px solid var(--border);
@@ -361,9 +362,10 @@
   color: var(--text-on-dark-strong);
   border: none;
   border-radius: var(--radius-md);
-  padding: 0 20px;
+  padding: 12px 20px;  /* vertical padding matches textarea — size comes from own content */
   font-weight: 500;
   font-size: 14px;
+  flex-shrink: 0;      /* never compresses regardless of flex container pressure */
 }
 
 .message-input button:disabled {
